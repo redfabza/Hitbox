@@ -1,0 +1,369 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+local LocalPlayer = Players.LocalPlayer
+
+if CoreGui:FindFirstChild("WACKSHOP_HITBOX") then
+    CoreGui.WACKSHOP_HITBOX:Destroy()
+end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "WACKSHOP_HITBOX"
+screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
+screenGui.Parent = CoreGui
+
+local hitboxSize = 25
+local isEnabled = false
+local originalSizes = {}
+local themeColor = Color3.fromRGB(0, 170, 255)
+
+-- =========================
+-- MAIN FRAME (ขวากลางจอ)
+-- =========================
+local mainFrame = Instance.new("Frame", screenGui)
+mainFrame.Size = UDim2.fromOffset(180, 175)
+mainFrame.AnchorPoint = Vector2.new(1, 0.5)
+mainFrame.Position = UDim2.new(1, -20, 0.5, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
+mainFrame.BorderSizePixel = 0
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 12)
+
+local stroke = Instance.new("UIStroke", mainFrame)
+stroke.Color = themeColor
+stroke.Thickness = 1.5
+
+local BG = Instance.new("UIGradient", mainFrame)
+BG.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(14, 14, 22)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 8, 14))
+})
+BG.Rotation = 135
+
+-- Title Bar
+local titleBar = Instance.new("Frame", mainFrame)
+titleBar.Size = UDim2.new(1, 0, 0, 38)
+titleBar.BackgroundColor3 = Color3.fromRGB(12, 12, 20)
+titleBar.BorderSizePixel = 0
+Instance.new("UICorner", titleBar).CornerRadius = UDim.new(0, 12)
+
+local topLine = Instance.new("Frame", titleBar)
+topLine.Size = UDim2.new(1, 0, 0, 1)
+topLine.Position = UDim2.new(0, 0, 1, -1)
+topLine.BackgroundColor3 = themeColor
+topLine.BackgroundTransparency = 0.5
+topLine.BorderSizePixel = 0
+
+local titleLbl = Instance.new("TextLabel", titleBar)
+titleLbl.Size = UDim2.new(1, -40, 1, 0)
+titleLbl.Position = UDim2.new(0, 10, 0, 0)
+titleLbl.BackgroundTransparency = 1
+titleLbl.Text = "⚡ WackShop Hitbox"
+titleLbl.TextColor3 = themeColor
+titleLbl.Font = Enum.Font.GothamBold
+titleLbl.TextSize = 13
+titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+
+local closeBtn = Instance.new("TextButton", titleBar)
+closeBtn.Size = UDim2.fromOffset(26, 26)
+closeBtn.AnchorPoint = Vector2.new(1, 0.5)
+closeBtn.Position = UDim2.new(1, -6, 0.5, 0)
+closeBtn.BackgroundColor3 = Color3.fromRGB(200, 30, 30)
+closeBtn.Text = "X"
+closeBtn.TextColor3 = Color3.new(1,1,1)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 13
+closeBtn.AutoButtonColor = false
+closeBtn.BorderSizePixel = 0
+closeBtn.ZIndex = 11
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
+
+-- Drag
+local function makeDraggable(frame, bar)
+    local dragging, dragStart, startPos
+    bar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (
+            input.UserInputType == Enum.UserInputType.MouseMovement
+            or input.UserInputType == Enum.UserInputType.Touch
+        ) then
+            local d = input.Position - dragStart
+            frame.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + d.X,
+                startPos.Y.Scale, startPos.Y.Offset + d.Y
+            )
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+end
+
+makeDraggable(mainFrame, titleBar)
+
+-- Size Input
+local inputFrame = Instance.new("Frame", mainFrame)
+inputFrame.Size = UDim2.new(1, -16, 0, 30)
+inputFrame.Position = UDim2.new(0, 8, 0, 46)
+inputFrame.BackgroundColor3 = Color3.fromRGB(16, 16, 26)
+inputFrame.BorderSizePixel = 0
+Instance.new("UICorner", inputFrame).CornerRadius = UDim.new(0, 8)
+Instance.new("UIStroke", inputFrame).Color = Color3.fromRGB(40, 40, 60)
+
+local inputLbl = Instance.new("TextLabel", inputFrame)
+inputLbl.Size = UDim2.new(0, 60, 1, 0)
+inputLbl.Position = UDim2.new(0, 8, 0, 0)
+inputLbl.BackgroundTransparency = 1
+inputLbl.Text = "📐 Size"
+inputLbl.TextColor3 = Color3.fromRGB(150, 150, 180)
+inputLbl.Font = Enum.Font.GothamSemibold
+inputLbl.TextSize = 12
+inputLbl.TextXAlignment = Enum.TextXAlignment.Left
+
+local textBox = Instance.new("TextBox", inputFrame)
+textBox.Size = UDim2.new(0, 70, 0, 22)
+textBox.AnchorPoint = Vector2.new(1, 0.5)
+textBox.Position = UDim2.new(1, -6, 0.5, 0)
+textBox.BackgroundColor3 = Color3.fromRGB(22, 22, 36)
+textBox.Text = tostring(hitboxSize)
+textBox.ClearTextOnFocus = false
+textBox.TextColor3 = Color3.fromRGB(0, 220, 150)
+textBox.Font = Enum.Font.GothamBold
+textBox.TextSize = 13
+textBox.BorderSizePixel = 0
+Instance.new("UICorner", textBox).CornerRadius = UDim.new(0, 6)
+
+textBox.FocusLost:Connect(function()
+    local num = tonumber(textBox.Text)
+    hitboxSize = num and math.max(1, num) or hitboxSize
+    textBox.Text = tostring(hitboxSize)
+end)
+
+-- ปุ่ม -10 / +10
+local function createAdjBtn(text, xPos, amount)
+    local btn = Instance.new("TextButton", mainFrame)
+    btn.Size = UDim2.new(0, 76, 0, 26)
+    btn.Position = UDim2.new(0, xPos, 0, 84)
+    btn.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(200, 200, 220)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 13
+    btn.AutoButtonColor = false
+    btn.BorderSizePixel = 0
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 7)
+    local s = Instance.new("UIStroke", btn)
+    s.Color = Color3.fromRGB(40, 40, 60)
+    s.Thickness = 1
+
+    btn.MouseEnter:Connect(function()
+        btn.BackgroundColor3 = Color3.fromRGB(26, 26, 40)
+    end)
+    btn.MouseLeave:Connect(function()
+        btn.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
+    end)
+    btn.MouseButton1Click:Connect(function()
+        hitboxSize = math.max(1, hitboxSize + amount)
+        textBox.Text = tostring(hitboxSize)
+    end)
+end
+
+createAdjBtn("− 10", 8, -10)
+createAdjBtn("+ 10", 92, 10)
+
+-- Toggle Switch
+local toggleBox = Instance.new("Frame", mainFrame)
+toggleBox.Size = UDim2.new(1, -16, 0, 46)
+toggleBox.Position = UDim2.new(0, 8, 0, 118)
+toggleBox.BackgroundColor3 = Color3.fromRGB(16, 16, 26)
+toggleBox.BorderSizePixel = 0
+Instance.new("UICorner", toggleBox).CornerRadius = UDim.new(0, 10)
+local tbs = Instance.new("UIStroke", toggleBox)
+tbs.Color = themeColor
+tbs.Thickness = 1
+tbs.Transparency = 0.6
+
+local tlbl = Instance.new("TextLabel", toggleBox)
+tlbl.Size = UDim2.new(1, -60, 0, 22)
+tlbl.Position = UDim2.new(0, 10, 0, 5)
+tlbl.BackgroundTransparency = 1
+tlbl.Text = "Hitbox"
+tlbl.TextColor3 = Color3.fromRGB(220, 220, 220)
+tlbl.Font = Enum.Font.GothamBold
+tlbl.TextSize = 13
+tlbl.TextXAlignment = Enum.TextXAlignment.Left
+
+local tdesc = Instance.new("TextLabel", toggleBox)
+tdesc.Size = UDim2.new(1, -60, 0, 16)
+tdesc.Position = UDim2.new(0, 10, 0, 26)
+tdesc.BackgroundTransparency = 1
+tdesc.Text = "ดาเมจเข้าทุกเกม"
+tdesc.TextColor3 = Color3.fromRGB(80, 100, 130)
+tdesc.Font = Enum.Font.Gotham
+tdesc.TextSize = 11
+tdesc.TextXAlignment = Enum.TextXAlignment.Left
+
+local swBG = Instance.new("Frame", toggleBox)
+swBG.Size = UDim2.fromOffset(44, 24)
+swBG.Position = UDim2.new(1, -54, 0.5, -12)
+swBG.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+swBG.BorderSizePixel = 0
+Instance.new("UICorner", swBG).CornerRadius = UDim.new(1, 0)
+
+local swKnob = Instance.new("Frame", swBG)
+swKnob.Size = UDim2.fromOffset(18, 18)
+swKnob.Position = UDim2.new(0, 3, 0.5, -9)
+swKnob.BackgroundColor3 = Color3.fromRGB(160, 160, 180)
+swKnob.BorderSizePixel = 0
+Instance.new("UICorner", swKnob).CornerRadius = UDim.new(1, 0)
+
+local clickArea = Instance.new("TextButton", toggleBox)
+clickArea.Size = UDim2.new(1, 0, 1, 0)
+clickArea.BackgroundTransparency = 1
+clickArea.Text = ""
+clickArea.ZIndex = 5
+
+local function updateToggle()
+    TweenService:Create(swBG, TweenInfo.new(0.2), {
+        BackgroundColor3 = isEnabled
+            and Color3.fromRGB(0, 160, 255)
+            or  Color3.fromRGB(40, 40, 55)
+    }):Play()
+    TweenService:Create(swKnob, TweenInfo.new(0.2), {
+        Position = isEnabled
+            and UDim2.new(1, -21, 0.5, -9)
+            or  UDim2.new(0, 3, 0.5, -9),
+        BackgroundColor3 = isEnabled
+            and Color3.fromRGB(255, 255, 255)
+            or  Color3.fromRGB(160, 160, 180)
+    }):Play()
+    tbs.Transparency = isEnabled and 0 or 0.6
+    tlbl.TextColor3 = isEnabled
+        and themeColor
+        or  Color3.fromRGB(220, 220, 220)
+    tdesc.Text = isEnabled and "✅ เปิดอยู่" or "ดาเมจเข้าทุกเกม"
+    stroke.Color = isEnabled
+        and themeColor
+        or  Color3.fromRGB(40, 40, 60)
+end
+
+clickArea.MouseButton1Click:Connect(function()
+    isEnabled = not isEnabled
+    updateToggle()
+end)
+
+-- =========================
+-- ปุ่ม W (ซ้ายกลางจอ)
+-- =========================
+local floatBtn = Instance.new("TextButton", screenGui)
+floatBtn.Size = UDim2.fromOffset(44, 44)
+floatBtn.AnchorPoint = Vector2.new(0, 0.5)
+floatBtn.Position = UDim2.new(0, 20, 0.5, 0)
+floatBtn.BackgroundColor3 = Color3.fromRGB(12, 12, 20)
+floatBtn.Text = "W"
+floatBtn.TextColor3 = themeColor
+floatBtn.TextSize = 18
+floatBtn.Font = Enum.Font.GothamBold
+floatBtn.BorderSizePixel = 0
+floatBtn.ZIndex = 20
+Instance.new("UICorner", floatBtn).CornerRadius = UDim.new(1, 0)
+local fStroke = Instance.new("UIStroke", floatBtn)
+fStroke.Color = themeColor
+fStroke.Thickness = 1.5
+makeDraggable(floatBtn, floatBtn)
+
+local mainVisible = true
+floatBtn.MouseButton1Click:Connect(function()
+    mainVisible = not mainVisible
+    mainFrame.Visible = mainVisible
+    TweenService:Create(fStroke, TweenInfo.new(0.2), {
+        Color = mainVisible
+            and themeColor
+            or  Color3.fromRGB(100, 100, 130)
+    }):Play()
+end)
+
+-- =========================
+-- RESET
+-- =========================
+local function resetHitboxes()
+    for player, data in pairs(originalSizes) do
+        if player and player.Character then
+            local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+            local head = player.Character:FindFirstChild("Head")
+            if hrp and data.hrpSize then
+                hrp.Size = data.hrpSize
+                hrp.Transparency = 1
+                hrp.CanCollide = true
+            end
+            if head and data.headSize then
+                head.Size = data.headSize
+                head.Transparency = 0
+                head.CanCollide = true
+            end
+        end
+    end
+    table.clear(originalSizes)
+end
+
+closeBtn.MouseButton1Click:Connect(function()
+    isEnabled = false
+    task.wait(0.1)
+    resetHitboxes()
+    screenGui:Destroy()
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    originalSizes[player] = nil
+end)
+
+-- =========================
+-- HITBOX LOOP
+-- =========================
+task.spawn(function()
+    while screenGui and screenGui.Parent do
+        if isEnabled then
+            local sizeVec = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+                    local head = player.Character:FindFirstChild("Head")
+                    if hrp then
+                        if not originalSizes[player] then
+                            originalSizes[player] = {
+                                hrpSize = hrp.Size,
+                                headSize = head and head.Size or nil
+                            }
+                        end
+                        hrp.Size = sizeVec
+                        hrp.Transparency = 0.8
+                        hrp.CanCollide = true
+                        if head then
+                            head.Size = sizeVec
+                            head.Transparency = 0.8
+                            head.CanCollide = true
+                        end
+                    end
+                end
+            end
+        else
+            if next(originalSizes) ~= nil then
+                resetHitboxes()
+            end
+        end
+        task.wait(0.08)
+    end
+end)
+
+print("✅ WackShop Hitbox Loaded!")
